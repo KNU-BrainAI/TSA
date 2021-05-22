@@ -85,22 +85,25 @@ test_loader = data_utils.DataLoader(test, batch_size=16, shuffle=True)
 #################### model training ####################
 criterion = nn.CrossEntropyLoss()
 learning_rate = 0.001
+print(model.parameters)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-num_epochs = 5
+num_epochs = 10
 num_batches = len(trn_loader)
 trn_loss = []
 val_loss = []
 
+#%% 
+avg_loss = 0
+total_batch = len(trn_loader)
 
-for epoch in range(num_epochs):
-    for i,data in enumerate(trn_loader,0):
-        x,x_label = data
+for epoch in range(num_epochs): # epoch 
+    for i,data in enumerate(trn_loader,0): # iteration
+        X,y = data
         optimizer.zero_grad()
-        pred = model(x)
-        loss = criterion(pred, x_label)
+        pred = model(X)
+        loss = criterion(pred, np.argmax(y,axis=1))
         loss.backward()
         optimizer.step()
-        trn_loss += loss.item()
-        
-                
+        avg_loss += loss / total_batch
+    print('[Epoch:{}] loss={}'.format(epoch+1,avg_loss))
 print("finish training!")
