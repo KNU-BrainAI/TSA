@@ -87,12 +87,14 @@ test_loader = data_utils.DataLoader(test, batch_size=16, shuffle=True)
 #################### model training ####################
 criterion = nn.CrossEntropyLoss
 learning_rate = 0.001
+print(model.parameters)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-num_epochs = 5
+num_epochs = 10
 num_batches = len(trn_loader)
 trn_loss = []
 val_loss = []
 
+<<<<<<< HEAD:pjs_ERP_torch.py
 avg_loss = 0
 total_batch = len(trn_loader)
 for epoch in range(num_epochs):
@@ -109,4 +111,20 @@ for epoch in range(num_epochs):
     print('[Epoch:{}] loss={}'.format(epoch + 1, avg_loss))
         
                 
+=======
+#%% 
+avg_loss = 0
+total_batch = len(trn_loader)
+
+for epoch in range(num_epochs): # epoch 
+    for i,data in enumerate(trn_loader,0): # iteration
+        X,y = data
+        optimizer.zero_grad()
+        pred = model(X)
+        loss = criterion(pred, np.argmax(y,axis=1))
+        loss.backward()
+        optimizer.step()
+        avg_loss += loss / total_batch
+    print('[Epoch:{}] loss={}'.format(epoch+1,avg_loss))
+>>>>>>> 30324fd88c50a6c2d4b6ebfc54e662d39c148ddb:ERP_torch.py
 print("finish training!")

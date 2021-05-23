@@ -23,7 +23,7 @@ def EEGNet(nb_classes, Chans = 64, Samples = 128,
                          'or Dropout, passed as a string.')
     
     input1   = Input(shape = (Chans, Samples, 1))
-
+    print("input shape", input1.shape, Chans, Samples, kernLength)
     ##################################################################
     block1       = Conv2D(F1, (1, kernLength), padding = 'same',
                                    input_shape = (Chans, Samples, 1),
@@ -36,14 +36,13 @@ def EEGNet(nb_classes, Chans = 64, Samples = 128,
     block1       = Activation('elu')(block1)
     block1       = AveragePooling2D((1, 4))(block1)
     block1       = dropoutType(dropoutRate)(block1)
-    
+
     block2       = SeparableConv2D(F2, (1, 16),
                                    use_bias = False, padding = 'same')(block1)
     block2       = BatchNormalization()(block2)
     block2       = Activation('elu')(block2)
     block2       = AveragePooling2D((1, 8))(block2)
     block2       = dropoutType(dropoutRate)(block2)
-        
     flatten      = Flatten(name = 'flatten')(block2)
     
     dense        = Dense(nb_classes, name = 'dense', 
