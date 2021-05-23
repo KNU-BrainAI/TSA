@@ -94,24 +94,8 @@ num_batches = len(trn_loader)
 trn_loss = []
 val_loss = []
 
-<<<<<<< HEAD:pjs_ERP_torch.py
-avg_loss = 0
-total_batch = len(trn_loader)
-for epoch in range(num_epochs):
-    for i,data in enumerate(trn_loader,0):
-        x,x_label = data
-        optimizer.zero_grad()
-        pred = model(x)
-        y_test = np.argmax(x_label,axis=1)
-        print(y_test)
-        loss = criterion(pred, y_test)
-        loss.backward()
-        optimizer.step()
-        avg_loss += loss / total_batch
-    print('[Epoch:{}] loss={}'.format(epoch + 1, avg_loss))
-        
-                
-=======
+
+
 #%% 
 avg_loss = 0
 total_batch = len(trn_loader)
@@ -126,5 +110,4 @@ for epoch in range(num_epochs): # epoch
         optimizer.step()
         avg_loss += loss / total_batch
     print('[Epoch:{}] loss={}'.format(epoch+1,avg_loss))
->>>>>>> 30324fd88c50a6c2d4b6ebfc54e662d39c148ddb:ERP_torch.py
 print("finish training!")
