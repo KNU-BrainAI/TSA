@@ -70,7 +70,9 @@ Y_test       = np_utils.to_categorical(Y_test-1)
 
 # convert data to NHWC (trials, channels, samples, kernels) format. Data 
 # contains 60 channels and 151 time-points. Set the number of kernels to 1.
+print("xtrian shape:",X_train.shape)
 X_train      = X_train.reshape(X_train.shape[0], chans, samples, kernels)
+print("xtrian shape:",X_train.shape)
 X_validate   = X_validate.reshape(X_validate.shape[0], chans, samples, kernels)
 X_test       = X_test.reshape(X_test.shape[0], chans, samples, kernels)
    

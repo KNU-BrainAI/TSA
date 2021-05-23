@@ -1,22 +1,19 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import numpy as np
 class EEGNet(nn.Module):
     
     def __init__(self):
         super(EEGNet, self).__init__()
-    
         # Conv2D Layer
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=(1, 64))
         self.batchnorm1 = nn.BatchNorm2d(8, False)
-        
         # Depthwise Layer
-        self.depthwise = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(64, 1),
+        self.depthwise = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(60, 1),
                                    groups=8)
         self.batchnorm2 = nn.BatchNorm2d(16, False)
         self.pooling1 = nn.AvgPool2d(1, 4)
-        
         # Separable Layer
         self.separable1 = nn.Conv2d(in_channels=16, out_channels=16, kernel_size=(1,16),
                                     groups=16)
@@ -28,7 +25,7 @@ class EEGNet(nn.Module):
         self.flatten = nn.Flatten()
         
         #Linear
-        self.linear1 = nn.Linear(64,4)
+        self.linear1 = nn.Linear(80,4)
     
 
     def forward(self, x):
@@ -70,15 +67,15 @@ class EEGNet(nn.Module):
         #Linear
         x = self.linear1(x)
         print("linear", x.size())
-        
+
+
         # softmax
         x = F.softmax(x, dim=1)
-        x = torch.argmax(x, dim=1)
+        x = x.max(dim=1)[1]
         print("softmax : ", x )
-        
+
+
         return x
-    
 model = EEGNet()
-a = torch.randn(10,1,64,128)
-mymodel = model(a)
+
 

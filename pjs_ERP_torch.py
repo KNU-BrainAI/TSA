@@ -5,7 +5,8 @@ import torch.optim as optim
 import torch.utils.data as data_utils
 
 import numpy as np
-
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 # mne imports
 import mne
 from mne import io
@@ -64,8 +65,9 @@ Y_validate = F.one_hot(Y_validate.to(torch.int64)-1, 4)
 X_test = torch.Tensor(X_test)
 Y_test = torch.Tensor(Y_test)
 Y_test = F.one_hot(Y_test.to(torch.int64)-1, 4)
-
+print("xtrian shape:",X_train.shape)
 X_train = X_train.reshape(X_train.shape[0], kernels, chans, samples)
+print("xtrian shape:",X_train.shape)
 X_validate = X_validate.reshape(X_validate.shape[0], kernels, chans, samples)
 X_test = X_test.reshape(X_test.shape[0], kernels, chans, samples)
 
@@ -83,7 +85,7 @@ test = data_utils.TensorDataset(X_test, Y_test)
 test_loader = data_utils.DataLoader(test, batch_size=16, shuffle=True)
 
 #################### model training ####################
-criterion = nn.CrossEntropyLoss()
+criterion = nn.CrossEntropyLoss
 learning_rate = 0.001
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 num_epochs = 5
@@ -91,16 +93,20 @@ num_batches = len(trn_loader)
 trn_loss = []
 val_loss = []
 
-
+avg_loss = 0
+total_batch = len(trn_loader)
 for epoch in range(num_epochs):
     for i,data in enumerate(trn_loader,0):
         x,x_label = data
         optimizer.zero_grad()
         pred = model(x)
-        loss = criterion(pred, x_label)
+        y_test = np.argmax(x_label,axis=1)
+        print(y_test)
+        loss = criterion(pred, y_test)
         loss.backward()
         optimizer.step()
-        trn_loss += loss.item()
+        avg_loss += loss / total_batch
+    print('[Epoch:{}] loss={}'.format(epoch + 1, avg_loss))
         
                 
 print("finish training!")
