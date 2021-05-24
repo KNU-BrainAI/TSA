@@ -99,13 +99,17 @@ val_loss = []
 #%% 
 avg_loss = 0
 total_batch = len(trn_loader)
+loss_test = []
 
-for epoch in range(num_epochs): # epoch 
+for epoch in range(num_epochs): # epoch
+    avg_loss = 0
     for i,data in enumerate(trn_loader,0): # iteration
         X,y = data
         optimizer.zero_grad()
         pred = model(X)
-        loss = criterion(pred, np.argmax(y,axis=1))
+        #print(F.softmax(pred))
+        loss = criterion()(F.softmax(pred), np.argmax(y,axis=1))
+        #print("loss: ",loss)
         loss.backward()
         optimizer.step()
         avg_loss += loss / total_batch
