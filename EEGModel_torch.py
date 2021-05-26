@@ -54,7 +54,7 @@ class EEGNet(nn.Module):
         # print("input data", x.size())
         # Conv2D
         x = F.pad(x,(31,32,0,0))
-        x = F.elu(self.layer1(x))
+        x = self.layer1(x)
         # x = self.conv1(x)
         # print("conv1", x.size())
         # x = self.batchnorm1(x)    
@@ -68,7 +68,7 @@ class EEGNet(nn.Module):
         # print("batchnorm & elu", x.size())
         # x = self.pooling1(x)
         # print("pooling", x.size())
-        # x = F.dropout(x, 0.5)
+        x = F.dropout(x, 0.5)
         # print("dropout", x.size())
         
         # Separable conv2D
@@ -81,7 +81,7 @@ class EEGNet(nn.Module):
         # print("batchnorm & elu", x.size())
         # x = self.pooling2(x)
         # print("pooling", x.size())
-        # x = F.dropout(x, 0.5)
+        x = F.dropout(x, 0.5)
         # print("dropout", x.size())
         
         #Flatten
@@ -92,7 +92,7 @@ class EEGNet(nn.Module):
         x = self.linear1(x)
         # print("linear", x.size())
         
-        # softmaxs
+        # softmax
         # x = F.softmax(x, dim=1)
         # x = torch.argmax(x, dim=1)
         # print("softmax : ", x )
