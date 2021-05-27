@@ -102,21 +102,30 @@ loss_test = []
 
 for epoch in range(num_epochs): # epoch
     avg_loss = 0
+    acc = 0
     for i,data in enumerate(trn_loader,0): # iteration
         X,y = data
         optimizer.zero_grad()
         pred = model(X)
+        #accuracy
+        prediction = torch.max(pred,1)[1]
+        y = torch.max(y,1)[1]
+        acc += (prediction == y).sum()
+        accuracy = acc / (len(y)*total_batch)
         #print(F.softmax(pred))
-        loss = criterion()(F.softmax(pred), np.argmax(y,axis=1))
+        loss = criterion()(F.softmax(pred), y)
         #print("loss: ",loss)
         loss.backward()
         optimizer.step()
         avg_loss += loss / total_batch
-    print('[Epoch:{}] loss={}'.format(epoch+1,avg_loss))
+    print('[Epoch:{}] loss={}, acc={}'.format(epoch+1,avg_loss,accuracy))
     trn_loss.append(avg_loss.item())
+    trn_acc.append(accuracy.item())
 print("finish training!")
 
 plt.plot(trn_loss)
+plt.plot(trn_acc)
 plt.xlabel('epoch')
-plt.title('Loss')
+plt.title('Training')
+plt.legend(['loss','accuracy'])
 plt.show()
