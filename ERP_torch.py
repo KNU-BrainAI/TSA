@@ -107,14 +107,14 @@ for epoch in range(num_epochs): # epoch
     for i,data in enumerate(trn_loader,0): # iteration
         X,y = data
         optimizer.zero_grad()
-        pred = model(X)
+        pred = F.softmax(model(X), dim=1)
         #accuracy
         prediction = torch.max(pred,1)[1]
         y = torch.max(y,1)[1]
         acc += (prediction == y).sum()
         accuracy = acc / (len(y)*total_batch)
         #print(F.softmax(pred))
-        loss = criterion()(F.softmax(pred), y)
+        loss = criterion()(pred, y)
         #print("loss: ",loss)
         loss.backward()
         optimizer.step()
