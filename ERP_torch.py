@@ -92,6 +92,7 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 num_epochs = 10
 trn_loss = []
 val_loss = []
+trn_acc = []
 
 
 
