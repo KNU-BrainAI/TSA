@@ -90,7 +90,6 @@ learning_rate = 0.001
 print(model.parameters)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 num_epochs = 10
-num_batches = len(trn_loader)
 trn_loss = []
 val_loss = []
 
@@ -114,4 +113,10 @@ for epoch in range(num_epochs): # epoch
         optimizer.step()
         avg_loss += loss / total_batch
     print('[Epoch:{}] loss={}'.format(epoch+1,avg_loss))
+    trn_loss.append(avg_loss.item())
 print("finish training!")
+
+plt.plot(trn_loss)
+plt.xlabel('epoch')
+plt.title('Loss')
+plt.show()
