@@ -9,7 +9,6 @@ import os, fnmatch
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 # mne imports
 import mne
-from mne import io
 
 # tools for plotting confusion matrices
 from matplotlib import pyplot as plt
@@ -18,6 +17,7 @@ from matplotlib import pyplot as plt
 import EEGModels_torch
 
 model = EEGModels_torch.Deep_ConvNet()
+model = model.to('cuda')
 
 data_path = "C:/Users/PC/Desktop/SSSEP/new_data"
 files = fnmatch.filter(os.listdir(data_path),'*.set')
@@ -113,8 +113,8 @@ for epoch in range(num_epochs): # epoch
     acc = 0
     acc2 = 0
     
-    for i,data in enumerate(trn_loader,0): # iteration
-        x,y = data
+    for data_x, data_y in trn_loader: # iteration
+        x,y = data_x.to('cuda'), data_y.to('cuda')
         optimizer.zero_grad()
         pred = F.softmax(model(x), dim=1)
         #accuracy
@@ -135,8 +135,8 @@ for epoch in range(num_epochs): # epoch
     
     model.eval()
     with torch.no_grad():        
-        for i,data in enumerate(val_loader,0):
-            val_x, val_y = data
+        for data_x, data_y in val_loader:
+            val_x, val_y = data_x.to('cuda'), data_y.to('cuda')
             pred2 = F.softmax(model(val_x), dim=1)
             prediction2 = torch.max(pred2,1)[1]
             val_y = torch.max(val_y,1)[1]
@@ -153,30 +153,24 @@ for epoch in range(num_epochs): # epoch
 print("finish training & Validation!")
 
 
-plt.plot(trn_loss)
-plt.plot(trn_acc)
-plt.plot(val_loss)
-plt.plot(val_acc)
+plt.plot(trn_acc, 'r')
+plt.plot(trn_loss,'r,--')
+plt.plot(val_acc, 'b')
+plt.plot(val_loss, 'b,--')
 plt.xlabel('epoch')
 plt.title('Training & Validation')
-plt.legend(['loss','accuracy','val_loss','val_acc'])
+plt.legend(['trn_acc','trn_loss','val_acc','val_loss'])
 plt.show()
 
 model.eval()
 with torch.no_grad():
-  prob = F.softmax(model(X_test), dim=1)
+  Xtest = X_test.to('cuda')
+  Ytest = Y_test.to('cuda')
+  prob = F.softmax(model(Xtest), dim=1)
   probs = torch.max(prob,1)[1] + 1
   test_acc = 0
-  test_acc += (probs == Y_test).sum()
+  test_acc += (probs == Ytest).sum()
   test_acc2 = test_acc / len(Y_test)
   print("---------------------------------------")
   print("test accuracy={}".format(test_acc2))
   
-  
-  
-""" 
-import torch
-print(torch.cuda.get_device_name(0))
-print(torch.cuda.is_available())
-print(torch.__version__)
-"""
