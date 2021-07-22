@@ -10,7 +10,7 @@ import tensorflow as tf
 import mne
 
 # EEGNet-specific imports
-from EEGNet import EEGNet
+from pjs.TF.EEGNet import EEGNet
 from tensorflow.keras import utils as np_utils
 from tensorflow.keras import backend as K
 

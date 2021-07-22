@@ -21,7 +21,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 import models
 from sklearn.model_selection import train_test_split, KFold
 
-
+model = models.EEG_TCNet()
 
 
 # GPU allocation
@@ -88,7 +88,7 @@ for i in range(33,34):
 
         X_test = torch.Tensor(X_test)
         Y_test = torch.Tensor(Y_test)
-        Y_test = F.one_hot(Y_test.to(torch.int64)-1, 4)
+     #   Y_test = F.one_hot(Y_test.to(torch.int64)-1, 4)
         print("xtrian shape:",X_train.shape)
         X_train = X_train.reshape(X_train.shape[0], kernels, chans, samples)
         print("xtrian shape:",X_train.shape)
@@ -111,7 +111,6 @@ for i in range(33,34):
         #################### model training ####################
         criterion = nn.CrossEntropyLoss
         learning_rate = 0.001
-        model = models.EEG_TCNet()
         print(model.parameters)
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
         num_epochs = 100
@@ -147,8 +146,8 @@ for i in range(33,34):
                 avg_loss += loss / len(trn_loader)
 
             state = {"state_dict": model.state_dict(), "optimizer": optimizer.state_dict()}
-            torch.save(model.state_dict(), savepath)
-            model.load_state_dict(torch.load('C:/Users/PC/PycharmProjects/TSA/testmodel.pth'))
+            #torch.save(model.state_dict(), savepath)
+            #model.load_state_dict(torch.load('C:/Users/PC/PycharmProjects/TSA/testmodel.pth'))
 
             model.eval()
             with torch.no_grad():
