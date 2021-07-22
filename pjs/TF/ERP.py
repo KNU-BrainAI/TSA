@@ -8,7 +8,7 @@ from mne import io
 from mne.datasets import sample
 
 # EEGNet-specific imports
-from EEGNet import Multi_DS_EEGNet
+from pjs.TF.EEGNet import Multi_DS_EEGNet
 from tensorflow.keras import utils as np_utils
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras import backend as K
