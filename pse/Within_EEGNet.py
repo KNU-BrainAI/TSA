@@ -185,7 +185,7 @@ for i in range(1,17):
         f = open(save_dir+result_txt, "a")
         f.write("Sub"+ str(i) + "\n")
         f.write("k =" + str(fold) + "\n")
-        f.write("test_acc=" + str(trn_acc[-1]) + "\n")
+        f.write("train_acc=" + str(trn_acc[-1]) + "\n")
         f.write("val_acc=" + str(val_acc[-1]) + "\n")
         f.write("test_acc=" + str(test_acc2.item()) + "\n")
         f.close()
