@@ -31,7 +31,7 @@ from sklearn.model_selection import train_test_split, KFold
 
 
 # GPU allocation
-save_dir = 'C:/Users/PC/Desktop/TSA_result/EEGNet_Within/1_weight/'
+save_dir = 'C:/Users/PC/Desktop/TSA_result/EEGNet_Within/1_sum/'
 result_txt = 'EEGNet_1_weight.txt'
 kf = KFold(n_splits=5, shuffle= True, random_state= True)
 ##################### Process Main  ######################
@@ -109,15 +109,8 @@ for i in range(1,17):
 
         #################### model training ####################
         criterion = nn.CrossEntropyLoss
-        model = models.EEGNet_1_weight()
+        model = models.EEGNet_1_sum()
         model = model.to('cuda')
-        for name, param in model.named_parameters(): 
-            print(f'name:{name}') 
-            print(type(param)) 
-            print(f'param.shape:{param.shape}')
-            print(f'param.requries_grad:{param.requires_grad}') 
-            print('=====')
-
         
         learning_rate = 0.001
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)

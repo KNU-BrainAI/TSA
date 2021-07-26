@@ -84,7 +84,7 @@ val_loader = data_utils.DataLoader(val, batch_size=16, shuffle=True)
 #################### model training ####################
 criterion = nn.CrossEntropyLoss
 learning_rate = 0.001
-model = models.Test()
+model = models.Tuto()
 model = model.to('cuda')
 print(model.parameters)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
