@@ -31,8 +31,8 @@ from sklearn.model_selection import train_test_split, KFold
 
 
 # GPU allocation
-save_dir = 'C:/Users/PC/Desktop/TSA_result/EEGNet_Within/1_sum/'
-result_txt = 'EEGNet_1_sum.txt'
+save_dir = 'C:/Users/PC/Desktop/TSA_result/EEGNet_Within/2_TSANet/'
+result_txt = '2_TSANet.txt'
 kf = KFold(n_splits=5, shuffle= True, random_state= True)
 ##################### Process Main  ######################
 for i in range(1,17):
@@ -61,14 +61,18 @@ for i in range(1,17):
         labels = epochs.events[:,-1]
         #data *1000 uV to V
         data = epochs.get_data( )*1000000 # format is in (trials, channels, samples)
-        X.extend(data)
+        X.extend(data[:,:,0:1024])
+        Y.extend(labels)
+        X.extend(data[:,:,256:1280])
+        Y.extend(labels)
+        X.extend(data[:,:,512:1536])
         Y.extend(labels)
     X=np.array(X)
     Y=np.array(Y)
     print(len(X))
     print(len(Y))
     #samples = 3sec * 512Hz sampling rate
-    kernels, chans, samples = 1, 64, 1536
+    kernels, chans, samples = 1, 64, 1024
     for fold, (train_index, test_index) in enumerate(kf.split(X)):
         X_train = X[train_index]
         Y_train = Y[train_index]
@@ -109,12 +113,13 @@ for i in range(1,17):
 
         #################### model training ####################
         criterion = nn.CrossEntropyLoss
-        model = models.EEGNet_1_sum()
+        model = models.TSANet()
         model = model.to('cuda')
+        print(model.parameters)
         
         learning_rate = 0.001
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-        num_epochs = 100
+        num_epochs = 200
         trn_loss = []
         val_loss = []
         trn_acc = []
@@ -122,16 +127,17 @@ for i in range(1,17):
 
         testmodel = model
         savepath = 'C:/Users/PC/PycharmProjects/TSA/testmodel-fold-{fold}.pth'
-        early_stopping = EarlyStopping(patience = 30, verbose = True)
-        
+        early_stopping = EarlyStopping(patience = 40, verbose = True)
         for epoch in range(num_epochs):  # epoch
             model.train()
             avg_loss = 0
             avg_loss2 = 0
             acc = 0
             acc2 = 0
+
             for data_x, data_y in trn_loader: # iteration
                 x,y = data_x.to('cuda'), data_y.to('cuda')
+                optimizer.zero_grad()
                 pred = F.softmax(model(x), dim=1)
                 #accuracy
                 prediction = torch.max(pred,1)[1]
@@ -139,11 +145,9 @@ for i in range(1,17):
                 acc += (prediction == y).sum()
                 accuracy = acc / len(X_train)
                 loss = criterion()(pred, y)
-                optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
                 avg_loss += loss / len(trn_loader)
-               
             state = {"state_dict": model.state_dict(), "optimizer": optimizer.state_dict()}
             #torch.save(model.state_dict(), savepath)
             #model.load_state_dict(torch.load('C:/Users/PC/PycharmProjects/TSA/testmodel.pth'))

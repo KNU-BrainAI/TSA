@@ -220,6 +220,107 @@ class EEGNet_1_sum(nn.Module):
         y = self.linear1(y)
         return y
 
+class EEGNet_overlap(nn.Module):
+    # kernelLength = sampling_rate/2 , Chans = EEG channel num
+    def __init__(self, bias = False, class_num = 2, F1 = 16, D = 2, F2 = 32, kernLength = 256, Chans = 64):
+        super(EEGNet_overlap,self).__init__()
+        # Conv2D Layer
+        self.layer1 = nn.Sequential(
+            nn.ZeroPad2d(( ( ( (kernLength-1) //2) +1),((kernLength-1)//2 ),0,0)),
+            nn.Conv2d(in_channels=1, out_channels=F1, kernel_size=(1, kernLength), groups=1,bias=bias),
+            nn.BatchNorm2d(F1, False)
+        )
+        # Depthwise Layer
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(in_channels=F1, out_channels=F1*D, kernel_size=(Chans, 1), groups=F1),
+            nn.BatchNorm2d(F1*D, False),
+            nn.AvgPool2d(1, 16)
+        )
+        # Separable Layer
+        self.layer3 = nn.Sequential(
+            #Padding size = 1st Conv2D Filter(W,H) -> Pad((H-1)/2,(H-1)/2,(W-1)/2,(W-1)/2)
+            nn.ZeroPad2d(((((32 - 1) // 2 ) + 1), ( (32 - 1) // 2), 0, 0)),
+            nn.Conv2d(in_channels=F1*D, out_channels=F2, kernel_size=(1, 32), groups=F1*D),
+            nn.Conv2d(in_channels=F2, out_channels=F2, kernel_size=(1, 1)),
+            nn.BatchNorm2d(F2, False),
+            nn.AvgPool2d(1, 32)
+        )
+        # Flatten
+        self.flatten = nn.Flatten()
+
+        # Linear
+        self.linear1 = nn.Linear(F2 * 2 , class_num)
+
+    def forward(self, x):
+        # Conv2D
+        y = self.layer1(x)
+        # Depthwise conv2D
+        y = F.elu(self.layer2(y))
+        y = F.dropout(y, 0.5)
+        # Separable conv2D
+        y = F.elu(self.layer3(y))
+        y = F.dropout(y, 0.5)
+        # Flatten
+        y = self.flatten(y)
+        # Linear
+        y = self.linear1(y)
+        return y
+
+class EEGNet_2_ch_weight(nn.Module):
+    
+    # kernelLength = sampling_rate/2 , Chans = EEG channel num
+    
+    def __init__(self, bias = False, class_num = 2, F1 = 16, D = 2, F2 = 32, kernLength = 256, Chans = 64):
+        super(EEGNet_2_ch_weight,self).__init__()
+             
+        self.ch_weight =  nn.Parameter(torch.tensor(torch.rand((64,1), requires_grad = True)))
+        
+        
+        self.layer1 = nn.Sequential(
+            nn.ZeroPad2d(( ( ( (kernLength-1) //2) +1),((kernLength-1)//2 ),0,0)),
+            nn.Conv2d(in_channels=1, out_channels=F1, kernel_size=(1, kernLength), groups=1,bias=bias),
+            nn.BatchNorm2d(F1, False)
+        )
+        # Depthwise Layer
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(in_channels=F1, out_channels=F1*D, kernel_size=(Chans, 1), groups=F1),
+            nn.BatchNorm2d(F1*D, False),
+            nn.AvgPool2d(1, 16)
+        )
+        # Separable Layer
+        self.layer3 = nn.Sequential(
+            #Padding size = 1st Conv2D Filter(W,H) -> Pad((H-1)/2,(H-1)/2,(W-1)/2,(W-1)/2)
+            nn.ZeroPad2d(((((32 - 1) // 2 ) + 1), ( (32 - 1) // 2), 0, 0)),
+            nn.Conv2d(in_channels=F1*D, out_channels=F2, kernel_size=(1, 32), groups=F1*D),
+            nn.Conv2d(in_channels=F2, out_channels=F2, kernel_size=(1, 1)),
+            nn.BatchNorm2d(F2, False),
+            nn.AvgPool2d(1, 32)
+        )
+        # Flatten
+        self.flatten = nn.Flatten()
+
+        # Linear
+        self.linear1 = nn.Linear(F2 * 2 , class_num)
+        
+       
+    def forward(self, x):
+        tmp = x * self.ch_weight
+        y = x + tmp
+        # Conv2D
+        y = self.layer1(y)
+        # Depthwise conv2D
+        y = F.elu(self.layer2(y))
+        y = F.dropout(y, 0.5)
+        # Separable conv2D
+        y = F.elu(self.layer3(y))
+        y = F.dropout(y, 0.5)
+        # Flatten
+        y = self.flatten(y)
+        # Linear
+        y = self.linear1(y)
+        return y
+
+
 class Test(nn.Module):
     
     def __init__(self):
@@ -366,6 +467,226 @@ class Tuto(nn.Module):
         #Linear
         x = self.linear1(x)
         return x
+    
+class TSANet(nn.Module):
+    # kernelLength = sampling_rate/2 , Chans = EEG channel num
+    def __init__(self, bias = False, class_num = 2, F1 = 8, D = 2, F2 = 32, kernLength = 256, Chans = 64):
+        super(TSANet,self).__init__()
+        # Conv2D Layer
+        self.layer1 = nn.Sequential(
+            nn.ZeroPad2d(( ( ( (kernLength-1) //2) +1),((kernLength-1)//2 ),0,0)),
+            nn.Conv2d(in_channels=1, out_channels=F1, kernel_size=(1, kernLength), groups=1,bias=bias),
+            nn.BatchNorm2d(F1, False)
+        )
+        #1x1Conv2D Layer
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(in_channels=F1, out_channels=1, kernel_size=(1,1))
+        )
+        # Conv2D Layer2
+        self.layer3 = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=F1*D, kernel_size=(Chans, 1),groups=1),
+            nn.BatchNorm2d(F1*D, False),
+            nn.AvgPool2d(1, 32)
+        )
+        # Flatten
+        self.flatten = nn.Flatten()
+
+        # Linear
+        self.linear1 = nn.Linear(F2 * 16 , class_num)
+
+    def forward(self, x):
+        # Conv2D
+        y = self.layer1(x)
+        # 1x1 Conv2D
+        y = self.layer2(y)
+        # Depthwise conv2D
+        y = F.elu(self.layer3(y))
+        y = F.dropout(y, 0.5)
+        # Flatten
+        y = self.flatten(y)
+        # Linear
+        y = self.linear1(y)
+        return y
+
+class TSAtteNet(nn.Module):
+    # kernelLength = sampling_rate/2 , Chans = EEG channel num
+    def __init__(self, bias = False, class_num = 2, F1 = 8, F2 = 8, kernLength = 256, Chans = 64):
+        super(TSAtteNet,self).__init__()
+     
+        self.Wk =  nn.Linear(128,128)
+        self.ff1 = nn.Conv1d(4,8,kernel_size=1)
+        self.ff2 = nn.Conv1d(8,4,kernel_size=1)
+        # Conv2D Layer
+        self.layer1 = nn.Sequential(
+            nn.ZeroPad2d(( ( ( (kernLength-1) //2) +1),((kernLength-1)//2 ),0,0)),
+            nn.Conv2d(in_channels=1, out_channels=F1, kernel_size=(1, kernLength), groups=1,bias=bias),
+            nn.BatchNorm2d(F1, False)
+        )
+        #1x1Conv2D Layer
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(in_channels=F1, out_channels=1, kernel_size=(1,1), groups=F1)
+        )
+        # Conv2D Layer2
+        self.layer3 = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=F2, kernel_size=(Chans, 1),groups=1),
+            nn.BatchNorm2d(F2, False),
+            nn.AvgPool2d(1, 4)
+        )
+        # Flatten (1x32x16)
+        self.flatten = nn.Flatten()
+
+        # Linear
+        self.linear1 = nn.Linear(256 , class_num)
+    def Divide_word(self,x):
+        #input shape = (16,16,1,32) [batchsize,chan,Row,Col]
+        word = []
+        word1 = x[:,:,:,0:8]
+        word2 = x[:,:,:,8:16]
+        word3 = x[:,:,:,16:24]
+        word4 = x[:,:,:,24:32]
+        word = torch.cat([word1,word2,word3,word4],dim=2)
+        return word
+                         
+  
+    def Attention_score(self,x):
+        #K = self.Wk(x)
+        #print(torch.transpose(x,2,3).size())
+        #print("Ksize:",K.size())
+        #print("xsize:",x.size())
+        Att_score = torch.matmul(x,torch.transpose(x,2,3))
+        Att_score = Att_score.mul_(1/4**0.5)
+        #print("ATT size:",Att_score.size())
+        return Att_score
+    
+    def forward(self, x):
+        # Conv2D
+        y = self.layer1(x)
+        # 1x1 Conv2D
+        y = self.layer2(y)
+        # Depthwise conv2D
+        y = F.elu(self.layer3(y))
+        y = F.dropout(y, 0.5)
+        #print(y.size())
+        #Attention
+        temp = self.Divide_word(y)
+        #print(temp.size())
+        #y = torch.cat([temp[:,0,:,:],temp[:,1,:,:],temp[:,2,:,:],temp[:,3,:,:],temp[:,4,:,:],temp[:,5,:,:],temp[:,6,:,:],
+        #            temp[:,7,:,:],temp[:,8,:,:],temp[:,9,:,:],temp[:,10,:,:],temp[:,11,:,:],temp[:,12,:,:],temp[:,13,:,:],
+        #             temp[:,14,:,:],temp[:,15,:,:]],dim = 2)
+       
+        
+        #print(temp.size())
+        Q = temp
+        #print("Q size:",Q.size())
+        As = self.Attention_score(Q)
+
+        As = nn.Softmax(dim=-1)(As)
+
+        R = torch.matmul(As,Q)
+        #print("R size:",R.size())
+        #y = self.ff1(R)
+        #y = F.gelu(y)
+        #y = self.ff2(y)
+        #print("y size:",y.size())
+        #print(self.W1)
+        # Flatten
+        y = self.flatten(R)
+        # Linear
+        y = self.linear1(y)
+        return y
+
+class EEGAtteNet(nn.Module):
+    # kernelLength = sampling_rate/2 , Chans = EEG channel num
+    def __init__(self, bias = False, class_num = 2, F1 = 8, D=2, F2 = 16, kernLength = 256, Chans = 64):
+        super(EEGAtteNet,self).__init__()
+     
+        self.Wk =  nn.Linear(128,128)
+        self.ff1 = nn.Conv1d(4,8,kernel_size=1)
+        self.ff2 = nn.Conv1d(8,4,kernel_size=1)
+        # Conv2D Layer
+        self.layer1 = nn.Sequential(
+            nn.ZeroPad2d(( ( ( (kernLength-1) //2) +1),((kernLength-1)//2 ),0,0)),
+            nn.Conv2d(in_channels=1, out_channels=F1, kernel_size=(1, kernLength), groups=1,bias=bias),
+            nn.BatchNorm2d(F1, False)
+        )
+        # Depthwise Layer
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(in_channels=F1, out_channels=F1*D, kernel_size=(Chans, 1), groups=F1),
+            nn.BatchNorm2d(F1*D, False),
+            nn.AvgPool2d(1, 4)
+        )
+        # Separable Layer
+        self.layer3 = nn.Sequential(
+            #Padding size = 1st Conv2D Filter(W,H) -> Pad((H-1)/2,(H-1)/2,(W-1)/2,(W-1)/2)
+            nn.ZeroPad2d(((((32 - 1) // 2 ) + 1), ( (32 - 1) // 2), 0, 0)),
+            nn.Conv2d(in_channels=F1*D, out_channels=F2, kernel_size=(1, 32), groups=F1*D),
+            nn.Conv2d(in_channels=F2, out_channels=F2, kernel_size=(1, 1)),
+            nn.BatchNorm2d(F2, False),
+            nn.AvgPool2d(1, 8)
+        )
+        # Flatten (1x32x16)
+        self.flatten = nn.Flatten()
+
+        # Linear
+        self.linear1 = nn.Linear(512 , class_num)
+    def Divide_word(self,x):
+        #input shape = (16,16,1,32) [batchsize,chan,Row,Col]
+        word = []
+        word1 = x[:,:,:,0:8]
+        word2 = x[:,:,:,8:16]
+        word3 = x[:,:,:,16:24]
+        word4 = x[:,:,:,24:32]
+        word = torch.cat([word1,word2,word3,word4],dim=2)
+        return word
+                         
+  
+    def Attention_score(self,x):
+        #K = self.Wk(x)
+        #print(torch.transpose(x,2,3).size())
+        #print("Ksize:",K.size())
+        #print("xsize:",x.size())
+        Att_score = torch.matmul(x,torch.transpose(x,2,3))
+        Att_score = Att_score.mul_(1/4**0.5)
+        #print("ATT size:",Att_score.size())
+        return Att_score
+    
+    def forward(self, x):
+        # Conv2D
+        y = self.layer1(x)
+        # 1x1 Conv2D
+        y = self.layer2(y)
+        y = F.dropout(y, 0.5)
+        # Depthwise conv2D
+        y = F.elu(self.layer3(y))
+        y = F.dropout(y, 0.5)
+        #print(y.size())
+        #Attention
+        temp = self.Divide_word(y)
+        #print(temp.size())
+        #y = torch.cat([temp[:,0,:,:],temp[:,1,:,:],temp[:,2,:,:],temp[:,3,:,:],temp[:,4,:,:],temp[:,5,:,:],temp[:,6,:,:],
+        #            temp[:,7,:,:],temp[:,8,:,:],temp[:,9,:,:],temp[:,10,:,:],temp[:,11,:,:],temp[:,12,:,:],temp[:,13,:,:],
+        #             temp[:,14,:,:],temp[:,15,:,:]],dim = 2)
+       
+        
+        #print(temp.size())
+        Q = temp
+        #print("Q size:",Q.size())
+        As = self.Attention_score(Q)
+
+        As = nn.Softmax(dim=-1)(As)
+
+        R = torch.matmul(As,Q)
+        #print("R size:",R.size())
+        #y = self.ff1(R)
+        #y = F.gelu(y)
+        #y = self.ff2(y)
+        #print("y size:",y.size())
+        #print(self.W1)
+        # Flatten
+        y = self.flatten(R)
+        # Linear
+        y = self.linear1(y)
+        return y
 """
 for within-subject : Deep_ConvNEt, EEGNet, EEG-TCNet, CCRNN
 for cross-subject : with 'sub_*'
