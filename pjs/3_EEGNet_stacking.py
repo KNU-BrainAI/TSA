@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Aug 12 14:37:50 2021
+Created on Mon Aug 30 21:01:15 2021
 
 @author: PC
 """
@@ -20,7 +20,7 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 import mne
 from mne import io
 from mne.datasets import sample
-
+import math
 # tools for plotting confusion matrices
 from matplotlib import pyplot as plt
 
@@ -31,8 +31,8 @@ from sklearn.model_selection import train_test_split, KFold
 
 
 # GPU allocation
-save_dir = 'C:/Users/PC/Desktop/TSA_result/EEGNet_Within/2_EEGAtteNet/'
-result_txt = '2_EEGAtteNet.txt'
+save_dir = 'C:/Users/PC/Desktop/TSA_result/EEGNet_Within/3_EEGNet_stacking/'
+result_txt = '3_EEGNet_stacking_notoverlapping.txt'
 kf = KFold(n_splits=5, shuffle= True, random_state= True)
 ##################### Process Main  ######################
 for i in range(1,17):
@@ -68,7 +68,7 @@ for i in range(1,17):
     print(len(X))
     print(len(Y))
     #samples = 3sec * 512Hz sampling rate
-    kernels, chans, samples = 1, 64, 1024
+    kernels, chans, samples = 1, 64, 1536
     for fold, (train_index, test_index) in enumerate(kf.split(X)):
         X_train = []
         Y_train =[]
@@ -86,36 +86,37 @@ for i in range(1,17):
                                                           random_state=1004)
         #overlapping
         print("x_train_temp_shape", X_train_temp.shape)
-        X_train.extend(X_train_split[:,:,0:1024])
+        X_train.extend(X_train_split[:,:,0:1536])
         Y_train.extend(Y_train_split)
-        X_train.extend(X_train_split[:,:,256:1280])
-        Y_train.extend(Y_train_split)
-        X_train.extend(X_train_split[:,:,512:1536])
-        #X_train.extend(X_train_split[:,:,:])
+        #X_train.extend(X_train_split[:,:,256:1280])
+        #Y_train.extend(Y_train_split)
+        #X_train.extend(X_train_split[:,:,512:1536])
+        X_train.extend(X_train_split[:,:,:])
         Y_train.extend(Y_train_split)
         X_train=np.array(X_train)
         Y_train=np.array(Y_train)
         print("x_train_shape", X_train.shape)
         
         print("X_validate_split_shape", X_validate_split.shape)
-        X_validate.extend(X_validate_split[:,:,0:1024])
+        X_validate.extend(X_validate_split[:,:,0:1536])
         Y_validate.extend(Y_validate_split)
-        X_validate.extend(X_validate_split[:,:,256:1280])
-        Y_validate.extend(Y_validate_split)
-        X_validate.extend(X_validate_split[:,:,512:1536])
-        #X_validate.extend(X_validate_split[:,:,:])
+        #X_validate.extend(X_validate_split[:,:,256:1280])
+        #Y_validate.extend(Y_validate_split)
+        #X_validate.extend(X_validate_split[:,:,512:1536])
+        X_validate.extend(X_validate_split[:,:,:])
         Y_validate.extend(Y_validate_split)
         X_validate=np.array(X_validate)
         Y_validate=np.array(Y_validate)
         print("X_validate_shape", X_validate.shape)
       
         print("x_test_temp_shape", X_test_temp.shape)
-        X_test.extend(X_test_temp[:,:,0:1024])
-        Y_test.extend(Y_test_temp)
-        X_test.extend(X_test_temp[:,:,256:1280])
-        Y_test.extend(Y_test_temp)
-        X_test.extend(X_test_temp[:,:,512:1536])
-        #X_test.extend(X_test_temp[:,:,:])
+        #X_test.extend(X_test_temp[:,:,0:1024])
+        #Y_test.extend(Y_test_temp)
+        #X_test.extend(X_test_temp[:,:,256:1280])
+        #Y_test.extend(Y_test_temp)
+        #X_test.extend(X_test_temp[:,:,512:1536])
+        
+        X_test.extend(X_test_temp[:,:,:])
         Y_test.extend(Y_test_temp)
         
         X_test=np.array(X_test)
@@ -144,23 +145,20 @@ for i in range(1,17):
         print(X_test.shape[0], 'test samples')
 
         trn = data_utils.TensorDataset(X_train, Y_train)
-        trn_loader = data_utils.DataLoader(trn, batch_size=16, shuffle=True)
+        trn_loader = data_utils.DataLoader(trn, batch_size=8, shuffle=True)
 
         val = data_utils.TensorDataset(X_validate, Y_validate)
-        val_loader = data_utils.DataLoader(val, batch_size=16, shuffle=True)
-
-        test = data_utils.TensorDataset(X_test, Y_test)
-        test_loader = data_utils.DataLoader(test, batch_size=16, shuffle=True)
+        val_loader = data_utils.DataLoader(val, batch_size=8, shuffle=True)
 
         #################### model training ####################
         criterion = nn.CrossEntropyLoss
-        model = models.EEGAtteNet2()
+        model = models.EEGNet_3_stacking()
         model = model.to('cuda')
         print(model.parameters)
         
-        learning_rate = 0.001
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-        num_epochs = 200
+        
+        
+        num_epochs = 100
         trn_loss = []
         val_loss = []
         trn_acc = []
@@ -168,14 +166,16 @@ for i in range(1,17):
 
         testmodel = model
         savepath = 'C:/Users/PC/PycharmProjects/TSA/testmodel-fold-{fold}.pth'
-        early_stopping = EarlyStopping(patience =50, verbose = True)
+        early_stopping = EarlyStopping(patience =100, verbose = True)
         for epoch in range(num_epochs):  # epoch
             model.train()
             avg_loss = 0
             avg_loss2 = 0
             acc = 0
             acc2 = 0
-
+            learning_rate = 0.001*abs(math.cos(epoch)) 
+            optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+              
             for data_x, data_y in trn_loader: # iteration
                 x,y = data_x.to('cuda'), data_y.to('cuda')
                 optimizer.zero_grad()
@@ -226,7 +226,7 @@ for i in range(1,17):
         plt.plot(val_acc, 'g')
         plt.plot(val_loss, 'g,--')
         plt.xlabel('epoch')
-        plt.title('Training & Validation')
+        plt.title('Subject '+str(i)+" kfold "+str(fold)+' Training & Validation')
         plt.legend(['trn_acc','trn_loss','val_acc','val_loss'])
         plt.savefig(save_dir+'img/sub'+str(i)+'/figsub'+str(i)+str(fold)+'.png', dpi=300)
         plt.show()
